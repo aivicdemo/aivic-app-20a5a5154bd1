@@ -7,57 +7,49 @@ export interface User {
 }
 
 export const ROLE_PERMISSIONS: Record<Role, string[]> = {
-  admin: ['*'],
+  admin: [
+    'users:read', 'users:write', 'users:delete',
+    'files:read', 'files:write', 'files:delete',
+    'translations:read', 'translations:write', 'translations:delete',
+    'formats:read', 'formats:write', 'formats:delete',
+    'engines:read', 'engines:write', 'engines:delete',
+    'history:read', 'history:write', 'history:delete',
+    'errors:read', 'errors:write', 'errors:delete',
+    'settings:read', 'settings:write', 'settings:delete',
+    'evaluations:read', 'evaluations:write', 'evaluations:delete',
+    'bulk:import'
+  ],
   operator: [
-    'resources:read',
-    'resources:write',
     'users:read',
-    'files:read',
-    'files:write',
-    'translations:read',
-    'translations:write',
-    'bulk:write'
+    'files:read', 'files:write',
+    'translations:read', 'translations:write',
+    'formats:read',
+    'engines:read',
+    'history:read', 'history:write',
+    'errors:read',
+    'settings:read',
+    'evaluations:read', 'evaluations:write',
+    'bulk:import'
   ],
   viewer: [
-    'resources:read',
     'users:read',
     'files:read',
-    'translations:read'
+    'translations:read',
+    'formats:read',
+    'engines:read',
+    'history:read',
+    'errors:read',
+    'settings:read',
+    'evaluations:read'
   ]
 };
 
 export function hasPermission(user: User, permission: string): boolean {
-  if (!user || !user.role) return false;
-  
-  const rolePermissions = ROLE_PERMISSIONS[user.role] || [];
-  
-  if (rolePermissions.includes('*')) return true;
-  
-  return rolePermissions.includes(permission);
+  return user.permissions.includes(permission) || ROLE_PERMISSIONS[user.role].includes(permission);
 }
 
 export function checkPermission(user: User, permission: string): void {
   if (!hasPermission(user, permission)) {
     throw new Error(`Insufficient permissions. Required: ${permission}`);
-  }
-}
-
-export function getUserFromEvent(event: any): User {
-  const authHeader = event.headers?.Authorization || event.headers?.authorization;
-  if (!authHeader) {
-    throw new Error('No authorization header');
-  }
-  
-  try {
-    const token = authHeader.replace('Bearer ', '');
-    const decoded = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-    
-    return {
-      id: decoded.sub || decoded.userId,
-      role: decoded.role || 'viewer',
-      permissions: ROLE_PERMISSIONS[decoded.role || 'viewer']
-    };
-  } catch (error) {
-    throw new Error('Invalid token');
   }
 }
